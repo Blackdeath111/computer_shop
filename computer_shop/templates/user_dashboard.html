@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Dashboard</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+body { 
+    font-family: Arial, sans-serif; 
+    text-align: center; 
+    padding: 50px; 
+    background: linear-gradient(to right, #00c6ff, #0072ff); 
+    color: #fff; 
+}
+h1 { margin-bottom: 30px; }
+.time-display { font-size: 48px; margin-bottom: 20px; }
+.logout-btn { 
+    padding: 10px 20px; 
+    background: #dc3545; 
+    color: #fff; 
+    border: none; 
+    border-radius: 5px; 
+    cursor: pointer; 
+}
+.warning { 
+    color: yellow; 
+    font-weight: bold; 
+    margin-top: 20px; 
+    font-size: 24px; 
+    display:none; 
+}
+</style>
+</head>
+<body>
+
+<h1>Welcome, {{ user.username }}</h1>
+<div class="time-display" id="timeDisplay">Loading...</div>
+<div class="warning" id="warningMsg">⚠️ You only have 5 minutes left!</div>
+
+<form method="GET" action="/logout">
+    <button type="submit" class="logout-btn">Logout</button>
+</form>
+
+<script>
+let totalSeconds = {{ user.time_remaining }};  // Now stored as SECONDS in DB
+const userId = {{ user.id }};
+let warningShown = false;
+
+// Format time as HH:MM:SS
+function formatTime(seconds) {
+    const hh = Math.floor(seconds / 3600);
+    const mm = Math.floor((seconds % 3600) / 60);
+    const ss = seconds % 60;
+    return `${hh.toString().padStart(2, '0')}h ${mm.toString().padStart(2, '0')}m ${ss.toString().padStart(2, '0')}s`;
+}
+
+// Show initial time
+$('#timeDisplay').text(formatTime(totalSeconds));
+
+// Countdown every second
+function countdown() {
+    if (totalSeconds <= 0) {
+        alert("⏰ Your time is up! Logging out...");
+        window.location.href = "/logout";
+        return;
+    }
+
+    if (totalSeconds <= 300 && !warningShown) {
+        $('#warningMsg').fadeIn();
+        warningShown = true;
+    }
+
+    totalSeconds--;
+    $('#timeDisplay').text(formatTime(totalSeconds));
+}
+
+// Save time to server every 10 seconds
+function saveRemainingTime() {
+    $.ajax({
+        url: '/update_remaining_time/' + userId,
+        type: 'POST',
+        data: JSON.stringify({ seconds: totalSeconds }),
+        contentType: 'application/json'
+    });
+}
+
+// Sync every 30s (in case admin changes it)
+function syncTime() {
+    $.getJSON(`/get_user_time/${userId}`, function(data) {
+        if (data.success) {
+            totalSeconds = data.time_remaining;  // already in seconds
+        }
+    });
+}
+
+setInterval(countdown, 1000);
+setInterval(saveRemainingTime, 10000);
+setInterval(syncTime, 30000);
+</script>
+</body>
+</html>

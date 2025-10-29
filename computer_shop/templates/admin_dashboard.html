@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+body { font-family: Arial, sans-serif; padding: 30px; background: linear-gradient(to right, #6a11cb, #2575fc); color: #fff; }
+h1 { text-align: center; }
+.logout-btn { position: absolute; top: 20px; right: 30px; padding: 8px 15px; background: #dc3545; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+table { width: 100%; border-collapse: collapse; margin-top: 60px; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; color: #fff; }
+th { background-color: rgba(0,0,0,0.5); }
+tr.admin-row { background-color: rgba(255,255,255,0.2); pointer-events: none; }
+input[type="text"], input[type="number"] { padding: 5px; border-radius: 4px; border: none; width: 100px; }
+button { padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; margin-left: 5px; }
+.btn-add { background-color: #28a745; color: #fff; }
+.btn-update { background-color: #ffc107; color: #000; }
+.btn-delete { background-color: #dc3545; color: #fff; }
+.btn-time { background-color: #17a2b8; color: #fff; }
+.form-inline { display: inline-block; }
+
+/* Centered modal */
+.modal-bg {
+    display: none;
+    position: fixed;
+    z-index: 999;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+}
+.modal-content {
+    background: #fff;
+    color: #000;
+    padding: 20px;
+    border-radius: 10px;
+    width: 300px;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+.modal-content button {
+    margin: 10px;
+    width: 80px;
+}
+</style>
+</head>
+<body>
+<h1>Admin Dashboard</h1>
+
+<!-- Logout Button -->
+<form method="GET" action="/logout">
+    <button type="submit" class="logout-btn">Logout</button>
+</form>
+
+<!-- Add User Form -->
+<form id="addUserForm" method="POST" action="/add_user" class="form-inline">
+    <input type="text" name="username" placeholder="Username" required>
+    <input type="text" name="password" placeholder="Password" required>
+    <button type="submit" class="btn-add">Add User</button>
+</form>
+
+<!-- Users Table -->
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Password</th>
+            <th>Time Remaining</th>
+            <th>Hours</th>
+            <th>Minutes</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr class="{{ 'admin-row' if user.username == 'admin' }}">
+            <td>{{ user.id }}</td>
+            <td>
+                {% if user.username != 'admin' %}
+                <input type="text" class="username" value="{{ user.username }}">
+                {% else %}
+                {{ user.username }}
+                {% endif %}
+            </td>
+            <td>
+                {% if user.username != 'admin' %}
+                <input type="password" class="password" value="{{ user.password }}">
+                <button class="btn-showpass">Show</button>
+                {% else %}
+                ********
+                {% endif %}
+            </td>
+            <td><span class="timeDisplay">{{ (user.time_remaining // 60)|string }}h {{ (user.time_remaining % 60)|string }}m</span></td>
+            <td><input type="number" class="hours" min="0" value="0"></td>
+            <td><input type="number" class="minutes" min="0" value="0"></td>
+            <td>
+                {% if user.username != 'admin' %}
+                <button class="btn-update" data-id="{{ user.id }}">Update</button>
+                <button class="btn-delete" data-id="{{ user.id }}">Delete</button>
+                <button class="btn-time" data-id="{{ user.id }}" data-action="add">Add Time</button>
+                <button class="btn-time" data-id="{{ user.id }}" data-action="subtract">Subtract</button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Modal for Delete Confirmation -->
+<div class="modal-bg" id="deleteModal">
+    <div class="modal-content">
+        <p>Are you sure you want to delete this user?</p>
+        <button id="confirmDelete">Yes</button>
+        <button id="cancelDelete">No</button>
+    </div>
+</div>
+
+<script>
+let deleteUserId = null;
+
+// Show/hide password
+$('.btn-showpass').click(function(e){
+    e.preventDefault();
+    const input = $(this).siblings('.password');
+    if(input.attr('type') === 'password'){
+        input.attr('type','text');
+        $(this).text('Hide');
+    } else {
+        input.attr('type','password');
+        $(this).text('Show');
+    }
+});
+
+// Update user
+$('.btn-update').click(function() {
+    const row = $(this).closest('tr');
+    const userId = $(this).data('id');
+    const username = row.find('.username').val();
+    const password = row.find('.password').val();
+
+    $.post(`/update_user/${userId}`, {username, password}, function() {
+        alert('User updated!');
+        location.reload();
+    });
+});
+
+// Delete user modal
+$('.btn-delete').click(function() {
+    deleteUserId = $(this).data('id');
+    $('#deleteModal').fadeIn();
+});
+
+$('#confirmDelete').click(function() {
+    if(deleteUserId){
+        $.post(`/delete_user/${deleteUserId}`, function() {
+            location.reload();
+        });
+    }
+});
+
+$('#cancelDelete').click(function() {
+    $('#deleteModal').fadeOut();
+});
+
+// Add/Subtract time
+$('.btn-time').click(function(){
+    const row = $(this).closest('tr');
+    const userId = $(this).data('id');
+    const action = $(this).data('action');
+    const hours = parseInt(row.find('.hours').val()) || 0;
+    const minutes = parseInt(row.find('.minutes').val()) || 0;
+
+    $.post(`/set_time/${userId}`, {hours, minutes, action}, function(data){
+        if(data.success){
+            // Automatically update time remaining display
+            row.find('.timeDisplay').text(data.new_time);
+            row.find('.hours').val(0);
+            row.find('.minutes').val(0);
+        } else {
+            alert(data.message);
+        }
+    });
+});
+</script>
+</body>
+</html>

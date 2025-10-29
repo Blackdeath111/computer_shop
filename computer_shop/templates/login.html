@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(270deg, #0f0c29, #302b63, #24243e);
+            background-size: 600% 600%;
+            animation: gradientShift 15s ease infinite;
+            color: #fff;
+        }
+
+        @keyframes gradientShift {
+            0% {background-position: 0% 50%;}
+            50% {background-position: 100% 50%;}
+            100% {background-position: 0% 50%;}
+        }
+
+        .login-container {
+            background: rgba(0,0,0,0.7);
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,255,255,0.4);
+            text-align: center;
+            width: 340px;
+        }
+
+        .company-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #0ff;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .login-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 250px;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .password-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 18px;
+            color: #0ff;
+        }
+
+        button {
+            padding: 10px 30px;
+            border-radius: 8px;
+            border: 2px solid #0ff;
+            background: transparent;
+            color: #0ff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #0ff;
+            color: #000;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #aaa;
+            border-top: 1px solid rgba(0,255,255,0.3);
+            padding-top: 10px;
+        }
+
+        .footer a {
+            color: #0ff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Company name -->
+        <div class="company-name">Techzone Esports</div>
+
+        <!-- Login title -->
+        <div class="login-title">Login</div>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, msg in messages %}
+                <p class="{{ category }}">{{ msg }}</p>
+            {% endfor %}
+        {% endwith %}
+
+        <!-- Login form -->
+        <form method="POST">
+            <input type="text" name="username" placeholder="Username" required><br>
+            <div class="password-container">
+                <input type="password" name="password" id="password" placeholder="Password" required>
+                <span class="toggle-password" onclick="togglePassword()">👁️</span>
+            </div><br>
+            <button type="submit">Login</button>
+        </form>
+
+        <!-- Footer inside box -->
+        <div class="footer">
+            © 2025 Techzone Esports<br>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const pwd = document.getElementById("password");
+            const icon = document.querySelector(".toggle-password");
+            if (pwd.type === "password") {
+                pwd.type = "text";
+                icon.textContent = "👁️‍🗨️";
+            } else {
+                pwd.type = "password";
+                icon.textContent = "👁️";
+            }
+        }
+    </script>
+</body>
+</html>
